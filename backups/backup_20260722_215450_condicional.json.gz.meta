@@ -1,0 +1,12 @@
+{
+  "filename": "backup_20260722_215450_condicional.json.gz",
+  "fecha_creacion": "2026-07-22T21:54:50.208382",
+  "modo": "condicional",
+  "usuario": "mesa.ayuda",
+  "change_key": "2026-07-21T21:50:59.478683+00:00_27_93_19_11_U5_R5_P9_M5_T7_PR69_RM4_D3_TD4_UB13_PV2",
+  "ultima_fecha_db": "2026-07-21T21:50:59.478683+00:00",
+  "total_items": 27,
+  "total_historial": 93,
+  "size_bytes": 5440465,
+  "size_human": "5.19 MB"
+}
