@@ -1,25 +1,23 @@
-version: '3.8'
+version: "3.8"
 
 services:
-  # Base de Datos MySQL 8.0
   db:
     image: mysql:8.0
     container_name: renting_db
     restart: always
     environment:
-      MYSQL_DATABASE: ${DB_NAME:-inventario_db}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD:-123456}
+      MYSQL_DATABASE: ${DB_NAME}
+      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
     ports:
-      - "${DB_PORT:-3306}:3306"
+      - "${DB_PORT}:3306"
     volumes:
       - db_data:/var/lib/mysql
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD:-123456}"]
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${DB_PASSWORD}"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  # Backend API (Django + Gunicorn)
   backend:
     build:
       context: .
@@ -27,18 +25,20 @@ services:
     container_name: renting_backend
     restart: always
     environment:
-      - SECRET_KEY=${SECRET_KEY:-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}
-      - DEBUG=${DEBUG:-True}
-      - DB_ENGINE=django.db.backends.mysql
-      - DB_NAME=${DB_NAME:-inventario_db}
-      - DB_USER=${DB_USER:-root}
-      - DB_PASSWORD=${DB_PASSWORD:-123456}
-      - DB_HOST=db
-      - DB_PORT=3306
-      - ADMIN_USERNAME=${ADMIN_USERNAME:-admin}
-      - ADMIN_EMAIL=${ADMIN_EMAIL:-admin@cdaautomas.com.co}
-      - ADMIN_PASSWORD=${ADMIN_PASSWORD:-Admin123456!}
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-731815648196-0i12ig1acoqt3gj2tg4jlh1ge3p6nb79.apps.googleusercontent.com}
+      SECRET_KEY: ${SECRET_KEY}
+      DEBUG: ${DEBUG}
+      DB_ENGINE: django.db.backends.mysql
+      DB_NAME: ${DB_NAME}
+      DB_USER: ${DB_USER}
+      DB_PASSWORD: ${DB_PASSWORD}
+      DB_HOST: db
+      DB_PORT: ${DB_PORT}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_EMAIL: ${ADMIN_EMAIL}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      ALLOWED_HOSTS: ${ALLOWED_HOSTS}
+      CSRF_TRUSTED_ORIGINS: ${CSRF_TRUSTED_ORIGINS}
     ports:
       - "8000:8000"
     volumes:
