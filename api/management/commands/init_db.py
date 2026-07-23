@@ -59,10 +59,13 @@ class Command(BaseCommand):
             }
         )
 
-        if created:
+        if created or not user.password or not user.has_usable_password():
             user.set_password(admin_password)
+            user.email = admin_email
+            user.is_staff = True
+            user.is_superuser = True
             user.save()
-            self.stdout.write(self.style.SUCCESS(f'✓ Usuario Administrador "{admin_username}" creado exitosamente.'))
+            self.stdout.write(self.style.SUCCESS(f'✓ Contraseña asignada/actualizada para Usuario Administrador "{admin_username}".'))
         else:
             user.email = admin_email
             user.is_staff = True

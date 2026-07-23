@@ -1,0 +1,12 @@
+{
+  "filename": "backup_20260723_110539_manual.json.gz",
+  "fecha_creacion": "2026-07-23T11:05:39.479550",
+  "modo": "manual",
+  "usuario": "Sistema",
+  "change_key": "2026-07-23T16:05:37.570129+00:00_0_0_0_0_U1_R0_P0_M0_T0_PR0_RM0_D0_TD0_UB0_PV0",
+  "ultima_fecha_db": "2026-07-23T16:05:37.570129+00:00",
+  "total_items": 0,
+  "total_historial": 0,
+  "size_bytes": 634,
+  "size_human": "634 B"
+}

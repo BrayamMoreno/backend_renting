@@ -5,13 +5,21 @@ from django.conf import settings
 from django.db import migrations, models
 
 
+from django.contrib.auth.hashers import make_password
+
+
 def migrate_tecnico_names_to_ids(apps, schema_editor):
     Alistamiento = apps.get_model('api', 'Alistamiento')
     User = apps.get_model('auth', 'User')
     
     fallback_user = User.objects.first()
     if not fallback_user:
-        fallback_user = User.objects.create(username='admin', is_staff=True, is_superuser=True)
+        fallback_user = User.objects.create(
+            username='admin',
+            is_staff=True,
+            is_superuser=True,
+            password=make_password('Admin123456!')
+        )
     
     for alistamiento in Alistamiento.objects.all():
         name = (alistamiento.tecnico_nombre or '').strip()
