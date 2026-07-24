@@ -62,19 +62,12 @@ class Command(BaseCommand):
             }
         )
 
-        if created or not user.password or not user.has_usable_password():
-            user.set_password(admin_password)
-            user.email = admin_email
-            user.is_staff = True
-            user.is_superuser = True
-            user.save()
-            self.stdout.write(self.style.SUCCESS(f'✓ Contraseña asignada/actualizada para Usuario Administrador "{admin_username}".'))
-        else:
-            user.email = admin_email
-            user.is_staff = True
-            user.is_superuser = True
-            user.save()
-            self.stdout.write(f'  Usuario Administrador "{admin_username}" actualizado.')
+        user.set_password(admin_password)
+        user.email = admin_email
+        user.is_staff = True
+        user.is_superuser = True
+        user.save()
+        self.stdout.write(self.style.SUCCESS(f'✓ Contraseña asignada/actualizada para Usuario Administrador "{admin_username}".'))
 
         # Garantizar perfil y rol
         profile, _ = Profile.objects.get_or_create(
@@ -136,32 +129,9 @@ class Command(BaseCommand):
         for r in rams:
             Ram.objects.get_or_create(nombre=r)
 
-        # Ubicaciones
-        ubicaciones = ['Bodega Principal', 'Bodega de Alistamiento', 'Oficina Central', 'Soporte Técnico', 'En Tránsito', 'Cliente / Rentado']
-        for u in ubicaciones:
-            Ubicacion.objects.get_or_create(nombre=u)
 
-        # Puntos de Alistamiento
-        puntos_checklist = [
-            {'nombre': 'Limpieza física externa del equipo', 'orden': 1, 'requiere_evidencia': False},
-            {'nombre': 'Verificación de encendido y BIOS', 'orden': 2, 'requiere_evidencia': False},
-            {'nombre': 'Prueba de pantalla y teclado', 'orden': 3, 'requiere_evidencia': False},
-            {'nombre': 'Diagnóstico de Disco Duro / SSD (Salud)', 'orden': 4, 'requiere_evidencia': True},
-            {'nombre': 'Instalación de Sistema Operativo y Drivers', 'orden': 5, 'requiere_evidencia': False},
-            {'nombre': 'Verificación de RAM y Procesador', 'orden': 6, 'requiere_evidencia': False},
-            {'nombre': 'Prueba de batería y cargador', 'orden': 7, 'requiere_evidencia': False},
-            {'nombre': 'Limpieza final y empaque', 'orden': 8, 'requiere_evidencia': True},
-        ]
-        for p in puntos_checklist:
-            PuntoAlistamiento.objects.get_or_create(
-                nombre=p['nombre'],
-                defaults={
-                    'orden': p['orden'],
-                    'requiere_evidencia': p['requiere_evidencia']
-                }
-            )
 
-        self.stdout.write(self.style.SUCCESS('✓ Catálogos de Marcas, Tipos, Discos, RAM, Ubicaciones y Checklist poblados.'))
+        self.stdout.write(self.style.SUCCESS('✓ Catálogos de Marcas, Tipos, Discos Y RAM  poblados.'))
 
         self.stdout.write(self.style.SUCCESS('\n==================================================='))
         self.stdout.write(self.style.SUCCESS('  Base de Datos Inicializada Correctamente para Despliegue  '))
