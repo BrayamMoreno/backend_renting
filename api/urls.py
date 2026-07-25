@@ -5,7 +5,7 @@ from .views import (
     TipoProductoViewSet, TipoDiscoViewSet, ProcesadorViewSet, RamViewSet, DiscoViewSet, UbicacionViewSet, PuntoAlistamientoViewSet,
     DevolucionViewSet, RolViewSet, PermisoViewSet, AlistamientoViewSet,
     AlertaCriticaViewSet, UserPendingView, ProveedorViewSet, EntregadorViewSet,
-    ConfiguracionEmailBajaViewSet, BackupViewSet
+    ConfiguracionEmailBajaViewSet, BackupViewSet, BootstrapView, CatalogosBulkView
 )
 
 router = DefaultRouter()
@@ -30,6 +30,8 @@ router.register(r'configuraciones-email-baja', ConfiguracionEmailBajaViewSet)
 router.register(r'backups', BackupViewSet, basename='backups')
 
 urlpatterns = [
+    path('bootstrap/', BootstrapView.as_view(), name='bootstrap'),
+    path('catalogos/todos/', CatalogosBulkView.as_view(), name='catalogos-todos'),
     path('', include(router.urls)),
     path('user-pending/', UserPendingView.as_view(), name='user-pending'),
 ]

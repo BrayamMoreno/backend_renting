@@ -766,3 +766,78 @@ class BackupViewSet(viewsets.ViewSet):
             return Response({'status': 'deleted', 'message': f'Respaldo "{filename}" eliminado correctamente.'})
         return Response({'detail': 'No se pudo eliminar el archivo o no existe.'}, status=status.HTTP_404_NOT_FOUND)
 
+
+class BootstrapView(APIView):
+    """
+    Retorna en 1 sola solicitud HTTP todo el estado inicial necesario para la app:
+    inventario, recepciones, devoluciones, alistamientos, alertas y catálogos.
+    """
+    def get(self, request):
+        inventario_items = _inventario_qs_optimized().all()
+        recepciones = Recepcion.objects.select_related('entregador__proveedor', 'entregador').prefetch_related('equipos').all().order_by('-fecha')
+        devoluciones = Devolucion.objects.all().order_by('-fecha_creacion')
+        alistamientos = Alistamiento.objects.select_related('inventario_item', 'tecnico').all().order_by('-fecha')
+        alertas = AlertaCritica.objects.all().order_by('-fecha_creacion')
+
+        # Catalogos
+        marcas = Marca.objects.all().order_by('nombre')
+        tipos_producto = TipoProducto.objects.all().order_by('nombre')
+        tipos_disco = TipoDisco.objects.all().order_by('nombre')
+        procesadores = Procesador.objects.all().order_by('nombre')
+        ram = Ram.objects.all().order_by('nombre')
+        discos = Disco.objects.all().order_by('nombre')
+        ubicaciones = Ubicacion.objects.all()
+        puntos_alistamiento = PuntoAlistamiento.objects.all().order_by('orden')
+        proveedores = Proveedor.objects.all().order_by('nombre')
+        configuraciones_email = ConfiguracionEmailBaja.objects.all()
+
+        return Response({
+            'inventario': InventarioItemSerializer(inventario_items, many=True).data,
+            'recepciones': RecepcionSerializer(recepciones, many=True).data,
+            'devoluciones': DevolucionSerializer(devoluciones, many=True).data,
+            'alistamientos': AlistamientoSerializer(alistamientos, many=True).data,
+            'alertas': AlertaCriticaSerializer(alertas, many=True).data,
+            'catalogos': {
+                'marcas': MarcaSerializer(marcas, many=True).data,
+                'tipos_producto': TipoProductoSerializer(tipos_producto, many=True).data,
+                'tipos_disco': TipoDiscoSerializer(tipos_disco, many=True).data,
+                'procesadores': ProcesadorSerializer(procesadores, many=True).data,
+                'ram': RamSerializer(ram, many=True).data,
+                'discos': DiscoSerializer(discos, many=True).data,
+                'ubicaciones': UbicacionSerializer(ubicaciones, many=True).data,
+                'puntos_alistamiento': PuntoAlistamientoSerializer(puntos_alistamiento, many=True).data,
+                'proveedores': ProveedorSerializer(proveedores, many=True).data,
+                'configuraciones_email': ConfiguracionEmailBajaSerializer(configuraciones_email, many=True).data,
+            }
+        })
+
+
+class CatalogosBulkView(APIView):
+    """
+    Retorna la totalidad de catálogos en una sola solicitud HTTP.
+    """
+    def get(self, request):
+        marcas = Marca.objects.all().order_by('nombre')
+        tipos_producto = TipoProducto.objects.all().order_by('nombre')
+        tipos_disco = TipoDisco.objects.all().order_by('nombre')
+        procesadores = Procesador.objects.all().order_by('nombre')
+        ram = Ram.objects.all().order_by('nombre')
+        discos = Disco.objects.all().order_by('nombre')
+        ubicaciones = Ubicacion.objects.all()
+        puntos_alistamiento = PuntoAlistamiento.objects.all().order_by('orden')
+        proveedores = Proveedor.objects.all().order_by('nombre')
+        configuraciones_email = ConfiguracionEmailBaja.objects.all()
+
+        return Response({
+            'marcas': MarcaSerializer(marcas, many=True).data,
+            'tipos_producto': TipoProductoSerializer(tipos_producto, many=True).data,
+            'tipos_disco': TipoDiscoSerializer(tipos_disco, many=True).data,
+            'procesadores': ProcesadorSerializer(procesadores, many=True).data,
+            'ram': RamSerializer(ram, many=True).data,
+            'discos': DiscoSerializer(discos, many=True).data,
+            'ubicaciones': UbicacionSerializer(ubicaciones, many=True).data,
+            'puntos_alistamiento': PuntoAlistamientoSerializer(puntos_alistamiento, many=True).data,
+            'proveedores': ProveedorSerializer(proveedores, many=True).data,
+            'configuraciones_email': ConfiguracionEmailBajaSerializer(configuraciones_email, many=True).data,
+        })
+
