@@ -472,22 +472,44 @@ class DevolucionViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         instance = serializer.save()
         if instance.estado == 'CONFIRMADA':
-            # Mark all linked items as DEVUELTO and record history
+            # Mark all linked items as DADO_DE_BAJA and record history
             try:
-                devuelto_state = EquipoEstado.objects.get(nombre='DEVUELTO')
+                baja_state = EquipoEstado.objects.get(nombre='DADO_DE_BAJA')
+                now = timezone.now()
                 for item in instance.items.all():
                     old_est = item.estado.nombre if item.estado else None
-                    item.estado = devuelto_state
-                    item.save()
-                    
-                    registrar_historial(
-                        item=item,
-                        evento='CAMBIO_ESTADO',
-                        estado_anterior=old_est,
-                        estado_nuevo='DEVUELTO',
-                        usuario=self.request.user if self.request.user and not self.request.user.is_anonymous else None,
-                        detalles=f"Devolución confirmada por el proveedor. Custodia de devolución #{instance.id}."
-                    )
+                    if old_est != 'DADO_DE_BAJA':
+                        item.estado = baja_state
+                        if not item.fecha_baja:
+                            item.fecha_baja = now
+                        item.save()
+                        
+                        registrar_historial(
+                            item=item,
+                            evento='CAMBIO_ESTADO',
+                            estado_anterior=old_est,
+                            estado_nuevo='DADO_DE_BAJA',
+                            usuario=self.request.user if self.request.user and not self.request.user.is_anonymous else None,
+                            detalles=f"Equipo dado de baja por confirmación del proveedor (Devolución #{instance.id})."
+                        )
+                        
+                        # Enviar correo de baja si aplica (equipos rentados)
+                        if not item.es_propio:
+                            import threading
+                            import logging
+                            from .utils import enviar_correo_baja_equipo
+                            item_id = item.id
+                            def _send_email_bg(i_id=item_id):
+                                try:
+                                    from .models import InventarioItem
+                                    item_fresco = InventarioItem.objects.select_related(
+                                        'tipo_producto', 'marca', 'recepcion__entregador__proveedor'
+                                    ).get(pk=i_id)
+                                    enviar_correo_baja_equipo(item_fresco)
+                                except Exception as e:
+                                    logging.getLogger(__name__).error(f"[BAJA EMAIL] Error en hilo de correo para id={i_id}: {e}")
+                            t = threading.Thread(target=_send_email_bg, daemon=True)
+                            t.start()
             except EquipoEstado.DoesNotExist:
                 pass
             if not instance.confirmado_por:

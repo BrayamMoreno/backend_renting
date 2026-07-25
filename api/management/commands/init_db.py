@@ -98,12 +98,11 @@ class Command(BaseCommand):
         # Tipos de Producto
         tipos_prod = [
             {'nombre': 'Portátil', 'requiere_alistamiento': True, 'es_periferico': False},
-            {'nombre': 'Computador de Escritorio', 'requiere_alistamiento': True, 'es_periferico': False},
-            {'nombre': 'Servidor', 'requiere_alistamiento': True, 'es_periferico': False},
+            {'nombre': 'Torre', 'requiere_alistamiento': True, 'es_periferico': False},
+            {'nombre': 'Mini Torre', 'requiere_alistamiento': True, 'es_periferico': False},
             {'nombre': 'Monitor', 'requiere_alistamiento': False, 'es_periferico': True},
             {'nombre': 'Teclado', 'requiere_alistamiento': False, 'es_periferico': True},
-            {'nombre': 'Mouse', 'requiere_alistamiento': False, 'es_periferico': True},
-            {'nombre': 'Cargador', 'requiere_alistamiento': False, 'es_periferico': True},
+            {'nombre': 'Mouse', 'requiere_alistamiento': False, 'es_periferico': True}
         ]
         for tp in tipos_prod:
             TipoProducto.objects.get_or_create(
@@ -120,28 +119,25 @@ class Command(BaseCommand):
             TipoDisco.objects.get_or_create(nombre=td)
 
         # Disco (Capacidades)
-        discos = ['128 GB', '240 GB', '256 GB', '480 GB', '512 GB', '1 TB', '2 TB']
+        discos = ['128 GB', '240 GB', '256 GB', '480 GB', '512 GB']
         for d in discos:
             Disco.objects.get_or_create(nombre=d)
 
         # Ram (Capacidades)
-        rams = ['4 GB', '8 GB', '12 GB', '16 GB', '32 GB', '64 GB']
+        rams = ['8 GB', '16 GB', '24 GB','32 GB']
         for r in rams:
             Ram.objects.get_or_create(nombre=r)
 
         # Puntos de Alistamiento (Checklist)
         puntos_alistamiento = [
-            {'nombre': 'Inspección física y limpieza del equipo', 'requiere_evidencia': False, 'orden': 1},
-            {'nombre': 'Verificación de encendido y puertos (USB, HDMI, etc.)', 'requiere_evidencia': False, 'orden': 2},
-            {'nombre': 'Prueba de batería y cargador', 'requiere_evidencia': False, 'orden': 3},
-            {'nombre': 'Instalación y configuración del Sistema Operativo', 'requiere_evidencia': False, 'orden': 4},
-            {'nombre': 'Instalación de controladores (Drivers)', 'requiere_evidencia': False, 'orden': 5},
-            {'nombre': 'Instalación de software base y antivirus', 'requiere_evidencia': False, 'orden': 6},
-            {'nombre': 'Prueba de pantalla, teclado y mouse/touchpad', 'requiere_evidencia': False, 'orden': 7},
-            {'nombre': 'Prueba de conectividad (Wi-Fi y Ethernet)', 'requiere_evidencia': False, 'orden': 8},
-            {'nombre': 'Prueba de audio, micrófono y cámara web', 'requiere_evidencia': False, 'orden': 9},
-            {'nombre': 'Verificación de especificaciones (CPU, RAM, Disco)', 'requiere_evidencia': True, 'orden': 10},
-            {'nombre': 'Etiquetado de inventario / Placa de activo', 'requiere_evidencia': True, 'orden': 11},
+            {'nombre': 'Cambio de Nombre de Equipo', 'requiere_evidencia': False, 'orden': 1},
+            {'nombre': 'Instalación de Anydesk', 'requiere_evidencia': False, 'orden': 2},
+            {'nombre': 'Instalación de Chrome', 'requiere_evidencia': False, 'orden': 3},
+            {'nombre': 'Instalación de Fusion Inventory', 'requiere_evidencia': True, 'orden': 4},
+            {'nombre': 'Instalación de Antivirus Kaspersky', 'requiere_evidencia': True, 'orden': 5},
+            {'nombre': 'Registro en Entra Id', 'requiere_evidencia': True, 'orden': 6},
+            {'nombre': 'Instalación y Registro en Portal Empresa', 'requiere_evidencia': True, 'orden': 7},
+            
         ]
         for p in puntos_alistamiento:
             PuntoAlistamiento.objects.get_or_create(
@@ -171,10 +167,9 @@ class Command(BaseCommand):
                 'hijos': [
                     {
                         'nombre': 'Soluciones',
-                        'hijos': ['Piso 4', 'Piso 5']
+                        'hijos': ['Piso 1', 'Piso 2', 'Piso 3', 'Piso 4', 'Piso 5']
                     },
-                    'Bodega Principal',
-                    'Taller de Servicio Técnico'
+                    'Rtm 134','Colpatria 134','Smart','Fontibon', 'Calle 13','Primera de Mayo','Calle 63','Morato',
                 ]
             },
             {
