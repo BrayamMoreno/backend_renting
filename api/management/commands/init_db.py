@@ -167,14 +167,104 @@ class Command(BaseCommand):
                 'hijos': [
                     {
                         'nombre': 'Soluciones',
-                        'hijos': ['Piso 1', 'Piso 2', 'Piso 3', 'Piso 4', 'Piso 5']
+                        'hijos': [
+                            'Piso 1', 'Piso 2', 'Piso 3', 'Piso 4', 'Piso 5',
+                            'CallCenterRTM', 'CCT', 'Iva2piso', 'RecursosHumanos', 'Selectiva', 'Tecnologia', 'Togo1Piso'
+                        ]
                     },
-                    'Rtm 134','Colpatria 134','Smart','Fontibon', 'Calle 13','Primera de Mayo','Calle 63','Morato',
+                    'Rtm 134', 'Colpatria 134', 'Smart', 'Fontibon', 'Calle 13', 'Primera de Mayo', 'Calle 63', 'Morato',
+                    'Autoexpo', 'Automas_Calle 63', 'Bima', 'Calle 134', 'Calle 134 >', 'Calle 134 > > Bogota_RTM_134', 
+                    'Calle 134 > > Bogota_RTM_134 > Bogota_Colpatria_134', 'Express', 'Madiautoas', 'Morato-Cda', 
+                    'Motomas 134', 'Motomas 1ra de mayo'
                 ]
             },
             {
                 'nombre': 'Sede Operativa',
                 'hijos': ['Bodega de Recepción', 'Zona de Alistamiento']
+            },
+            {
+                'nombre': 'Armenia',
+                'hijos': ['peritar']
+            },
+            {
+                'nombre': 'Automas',
+                'hijos': ['Cajica', 'Cali_Palmira', 'Cota', 'Florencia', 'Pasto']
+            },
+            {
+                'nombre': 'Barranquilla',
+                'hijos': ['Cars', 'Via40']
+            },
+            {
+                'nombre': 'Bucaramanga',
+                'hijos': ['La_Rosita']
+            },
+            {
+                'nombre': 'Cali',
+                'hijos': ['CDA_del_Prado', 'Calle_5', 'Cañas_Gordas', 'CDA_La_34', 'Vasquez_Cobo']
+            },
+            {
+                'nombre': 'Cartagena',
+                'hijos': ['Enlace']
+            },
+            {
+                'nombre': 'ControlAutos',
+                'hijos': ['Fusagasugá']
+            },
+            {
+                'nombre': 'Delicias',
+                'hijos': ['Cali']
+            },
+            {
+                'nombre': 'Girardot',
+                'hijos': ['Control_Autos']
+            },
+            {
+                'nombre': 'Ibague',
+                'hijos': ['Diagnosticar']
+            },
+            {
+                'nombre': 'Manizales',
+                'hijos': ['Peritar']
+            },
+            {
+                'nombre': 'Medellin',
+                'hijos': ['Barbosa', 'Calle 10', 'CarmenVivoral', 'Laureles', 'Laureles > Movicentro_Medellin', 'Llano Grande_Rio']
+            },
+            {
+                'nombre': 'Mercallant',
+                'hijos': []
+            },
+            {
+                'nombre': 'Motomas',
+                'hijos': ['Fusagasuga', 'Fusagasuga > CDA_Fusa', 'Fusagasuga > CDA_Fusa > Motos_Fusa']
+            },
+            {
+                'nombre': 'Moviles',
+                'hijos': ['automas']
+            },
+            {
+                'nombre': 'Neiva',
+                'hijos': []
+            },
+            {
+                'nombre': 'Pereira',
+                'hijos': ['Peritar']
+            },
+            {
+                'nombre': 'prueba',
+                'hijos': []
+            },
+            {
+                'nombre': 'Santander',
+                'hijos': ['Giron']
+            },
+            {
+                'nombre': 'Villavicencio',
+                'hijos': []
+            },
+            {
+                'nombre': 'Yopal',
+                'hijos': []
             }
         ]
         crear_ubicaciones_rec(ubicaciones_def)
