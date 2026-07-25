@@ -91,7 +91,7 @@ class Command(BaseCommand):
         self.stdout.write('\nPre-poblando catálogos por defecto...')
 
         # Marcas
-        marcas = ['Lenovo', 'HP', 'Dell', 'Apple', 'Asus', 'Acer', 'Samsung', 'Toshiba']
+        marcas = ['Lenovo', 'HP', 'Dell']
         for m in marcas:
             Marca.objects.get_or_create(nombre=m)
 
