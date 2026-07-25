@@ -126,7 +126,7 @@ class InventarioItem(models.Model):
         ('DADO_DE_BAJA', 'Dado de Baja'),
     ]
 
-    item = models.IntegerField(null=True, blank=True)
+    item = models.IntegerField(null=True, blank=True, db_index=True)
     es_propio = models.BooleanField(default=False, help_text='Indica si el equipo es propio (no alquilado)')
     tipo_producto = models.ForeignKey('TipoProducto', on_delete=models.SET_NULL, null=True, blank=True)
     marca = models.ForeignKey('Marca', on_delete=models.SET_NULL, null=True, blank=True)
@@ -143,18 +143,19 @@ class InventarioItem(models.Model):
     comentario_devolucion = models.TextField(null=True, blank=True)
     creado_automaticamente = models.BooleanField(
         default=False,
+        db_index=True,
         help_text='Indica si el equipo fue creado automáticamente durante un flujo de ingreso (cambio/asociación) y sus datos están pendientes de completar.'
     )
-    
+
     estado = models.ForeignKey(EquipoEstado, on_delete=models.PROTECT, related_name='inventario_items', default=get_default_estado)
     recepcion = models.ForeignKey(Recepcion, related_name='equipos', on_delete=models.CASCADE, null=True, blank=True)
-    fecha_ingreso = models.DateTimeField(auto_now_add=True)
+    fecha_ingreso = models.DateTimeField(auto_now_add=True, db_index=True)
     metadata_ocr = models.JSONField(null=True, blank=True)
     devolucion = models.ForeignKey('Devolucion', on_delete=models.SET_NULL, null=True, blank=True, related_name='items')
     # Campos de reemplazo
     fecha_inicio_reemplazo = models.DateTimeField(null=True, blank=True, help_text='Timestamp when replacement was registered')
     equipo_reemplazante_serial = models.CharField(max_length=100, null=True, blank=True, help_text='Serial of the new equipment replacing this one')
-    
+
     # Asignación de Alistamiento
     tecnico_asignado = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='alistamientos_asignados')
     fecha_asignacion_alistamiento = models.DateTimeField(null=True, blank=True)
@@ -164,7 +165,15 @@ class InventarioItem(models.Model):
 
     responsable_devolucion = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='items_responsables_devolucion', help_text='Usuario que colocó el equipo en devolución')
     solicitante_cambio = models.CharField(max_length=255, null=True, blank=True, help_text='Nombre de la persona que solicitó el cambio')
-    equipo_asociado = models.IntegerField(null=True, blank=True, help_text='Item number del equipo al que está asociado')
+    equipo_asociado = models.IntegerField(null=True, blank=True, db_index=True, help_text='Item number del equipo al que está asociado')
+
+    class Meta:
+        indexes = [
+            # Índice compuesto para filtrado por estado + fecha (el más común en listados)
+            models.Index(fields=['estado', '-fecha_ingreso'], name='idx_inventario_estado_fecha'),
+            # Índice compuesto para filtrado por técnico asignado + estado (dashboard y alistamiento)
+            models.Index(fields=['tecnico_asignado', 'estado'], name='idx_inventario_tecnico_estado'),
+        ]
 
     def save(self, *args, **kwargs):
         # Convertir seriales a mayúsculas

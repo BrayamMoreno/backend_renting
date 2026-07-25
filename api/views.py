@@ -1,5 +1,6 @@
 from django.utils import timezone
 from django.contrib.auth.models import User
+from django.db.models import Prefetch
 from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -17,6 +18,15 @@ from .serializers import (
     AlistamientoSerializer, AlertaCriticaSerializer, ProveedorSerializer, EntregadorSerializer,
     ItemHistorialSerializer, ConfiguracionEmailBajaSerializer
 )
+
+
+# Queryset optimizado para InventarioItem (reutilizado en varios places)
+def _inventario_qs_optimized():
+    return InventarioItem.objects.select_related(
+        'estado', 'tipo_producto', 'marca', 'procesador',
+        'disco', 'tipo_disco', 'ram', 'ubicacion',
+        'recepcion', 'devolucion', 'tecnico_asignado', 'responsable_devolucion'
+    )
 
 
 class PuntoAlistamientoViewSet(viewsets.ModelViewSet):
@@ -121,7 +131,11 @@ class EntregadorViewSet(viewsets.ModelViewSet):
 
 
 class RecepcionViewSet(viewsets.ModelViewSet):
-    queryset = Recepcion.objects.all().order_by('-fecha')
+    queryset = Recepcion.objects.select_related(
+        'entregador', 'entregador__proveedor'
+    ).prefetch_related(
+        Prefetch('equipos', queryset=_inventario_qs_optimized())
+    ).order_by('-fecha')
     serializer_class = RecepcionSerializer
 
     def perform_create(self, serializer):
@@ -199,7 +213,7 @@ class RecepcionViewSet(viewsets.ModelViewSet):
 
 
 class InventarioItemViewSet(viewsets.ModelViewSet):
-    queryset = InventarioItem.objects.all().order_by('-fecha_ingreso')
+    queryset = _inventario_qs_optimized().order_by('-fecha_ingreso')
     serializer_class = InventarioItemSerializer
 
     def perform_create(self, serializer):
@@ -448,7 +462,11 @@ class InventarioItemViewSet(viewsets.ModelViewSet):
 
 
 class DevolucionViewSet(viewsets.ModelViewSet):
-    queryset = Devolucion.objects.all().order_by('-fecha_creacion')
+    queryset = Devolucion.objects.select_related(
+        'confirmado_por'
+    ).prefetch_related(
+        Prefetch('items', queryset=_inventario_qs_optimized())
+    ).order_by('-fecha_creacion')
     serializer_class = DevolucionSerializer
 
     def perform_update(self, serializer):
@@ -488,7 +506,11 @@ class PermisoViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class AlistamientoViewSet(viewsets.ModelViewSet):
-    queryset = Alistamiento.objects.all().order_by('-fecha')
+    queryset = Alistamiento.objects.select_related(
+        'inventario_item', 'inventario_item__estado',
+        'inventario_item__tipo_producto', 'inventario_item__marca',
+        'inventario_item__ubicacion', 'tecnico'
+    ).order_by('-fecha')
     serializer_class = AlistamientoSerializer
 
     def perform_create(self, serializer):
@@ -590,7 +612,7 @@ class AlistamientoViewSet(viewsets.ModelViewSet):
 
 
 class AlertaCriticaViewSet(viewsets.ModelViewSet):
-    queryset = AlertaCritica.objects.all()
+    queryset = AlertaCritica.objects.all().order_by('-fecha_creacion')
     serializer_class = AlertaCriticaSerializer
 
     @action(detail=False, methods=['get'], url_path='no-leidas')

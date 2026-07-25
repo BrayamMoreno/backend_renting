@@ -32,7 +32,7 @@ class Command(BaseCommand):
                 defaults={'descripcion': desc}
             )
             if created:
-                self.stdout.write(self.style.SUCCESS(f'✓ Estado creado: {nombre}'))
+                self.stdout.write(self.style.SUCCESS(f'[OK] Estado creado: {nombre}'))
             else:
                 self.stdout.write(f'  Estado existente: {nombre}')
 
@@ -67,7 +67,7 @@ class Command(BaseCommand):
         user.is_staff = True
         user.is_superuser = True
         user.save()
-        self.stdout.write(self.style.SUCCESS(f'✓ Contraseña asignada/actualizada para Usuario Administrador "{admin_username}".'))
+        self.stdout.write(self.style.SUCCESS(f'[OK] Contraseña asignada/actualizada para Usuario Administrador "{admin_username}".'))
 
         # Garantizar perfil y rol
         profile, _ = Profile.objects.get_or_create(
@@ -83,7 +83,7 @@ class Command(BaseCommand):
         # 4. Poblar Catálogo de Procesadores si la semilla existe
         try:
             call_command('seed_intel_processors')
-            self.stdout.write(self.style.SUCCESS('✓ Catálogo de Procesadores Intel poblado.'))
+            self.stdout.write(self.style.SUCCESS('[OK] Catálogo de Procesadores Intel poblado.'))
         except Exception:
             pass
 
@@ -129,9 +129,62 @@ class Command(BaseCommand):
         for r in rams:
             Ram.objects.get_or_create(nombre=r)
 
+        # Puntos de Alistamiento (Checklist)
+        puntos_alistamiento = [
+            {'nombre': 'Inspección física y limpieza del equipo', 'requiere_evidencia': False, 'orden': 1},
+            {'nombre': 'Verificación de encendido y puertos (USB, HDMI, etc.)', 'requiere_evidencia': False, 'orden': 2},
+            {'nombre': 'Prueba de batería y cargador', 'requiere_evidencia': False, 'orden': 3},
+            {'nombre': 'Instalación y configuración del Sistema Operativo', 'requiere_evidencia': False, 'orden': 4},
+            {'nombre': 'Instalación de controladores (Drivers)', 'requiere_evidencia': False, 'orden': 5},
+            {'nombre': 'Instalación de software base y antivirus', 'requiere_evidencia': False, 'orden': 6},
+            {'nombre': 'Prueba de pantalla, teclado y mouse/touchpad', 'requiere_evidencia': False, 'orden': 7},
+            {'nombre': 'Prueba de conectividad (Wi-Fi y Ethernet)', 'requiere_evidencia': False, 'orden': 8},
+            {'nombre': 'Prueba de audio, micrófono y cámara web', 'requiere_evidencia': False, 'orden': 9},
+            {'nombre': 'Verificación de especificaciones (CPU, RAM, Disco)', 'requiere_evidencia': True, 'orden': 10},
+            {'nombre': 'Etiquetado de inventario / Placa de activo', 'requiere_evidencia': True, 'orden': 11},
+        ]
+        for p in puntos_alistamiento:
+            PuntoAlistamiento.objects.get_or_create(
+                nombre=p['nombre'],
+                defaults={
+                    'requiere_evidencia': p['requiere_evidencia'],
+                    'orden': p['orden'],
+                    'activo': True
+                }
+            )
 
+        # Ubicaciones por defecto (Jerárquicas Multinivel: Padre -> Hijo -> Nieto)
+        def crear_ubicaciones_rec(nodos, padre=None):
+            for node in nodos:
+                if isinstance(node, str):
+                    Ubicacion.objects.get_or_create(nombre=node, padre=padre)
+                elif isinstance(node, dict):
+                    nombre = node.get('nombre')
+                    hijos = node.get('hijos', [])
+                    obj, _ = Ubicacion.objects.get_or_create(nombre=nombre, padre=padre)
+                    if hijos:
+                        crear_ubicaciones_rec(hijos, padre=obj)
 
-        self.stdout.write(self.style.SUCCESS('✓ Catálogos de Marcas, Tipos, Discos Y RAM  poblados.'))
+        ubicaciones_def = [
+            {
+                'nombre': 'Bogota',
+                'hijos': [
+                    {
+                        'nombre': 'Soluciones',
+                        'hijos': ['Piso 4', 'Piso 5']
+                    },
+                    'Bodega Principal',
+                    'Taller de Servicio Técnico'
+                ]
+            },
+            {
+                'nombre': 'Sede Operativa',
+                'hijos': ['Bodega de Recepción', 'Zona de Alistamiento']
+            }
+        ]
+        crear_ubicaciones_rec(ubicaciones_def)
+
+        self.stdout.write(self.style.SUCCESS('[OK] Catálogos de Marcas, Tipos, Discos, RAM, Ubicaciones y Puntos de Alistamiento poblados.'))
 
         self.stdout.write(self.style.SUCCESS('\n==================================================='))
         self.stdout.write(self.style.SUCCESS('  Base de Datos Inicializada Correctamente para Despliegue  '))

@@ -106,11 +106,16 @@ class UbicacionCatalogField(serializers.PrimaryKeyRelatedField):
                 return None
             if data_str.isdigit():
                 return super().to_internal_value(int(data_str))
-            
-            for obj in Ubicacion.objects.all():
-                if obj.path().lower() == data_str.lower() or obj.nombre.lower() == data_str.lower():
-                    return obj
-            
+
+            # Búsqueda directa por nombre (sin loop O(n)).
+            # Los paths como "Piso 1 > Sala A" se separan y se resuelven jerárquicamente.
+            obj = Ubicacion.objects.filter(nombre__iexact=data_str, padre__isnull=True).first()
+            if not obj:
+                obj = Ubicacion.objects.filter(nombre__iexact=data_str).first()
+            if obj:
+                return obj
+
+            # Si tiene separador de path '>', construir jerarquía de forma eficiente
             parts = [p.strip() for p in data_str.split('>')]
             parent = None
             for part in parts:
@@ -147,22 +152,25 @@ class ResponsableDevolucionField(serializers.PrimaryKeyRelatedField):
                 return None
             if data_str.isdigit():
                 return super().to_internal_value(int(data_str))
-            
+
             # Try exact username match
             user = User.objects.filter(username__iexact=data_str).first()
-            
-            # Try full name match (first_name + last_name)
+
+            # Try full name match via DB annotation (evita loop O(n) en Python)
             if not user:
-                for u in User.objects.all():
-                    full_name = f"{u.first_name} {u.last_name}".strip()
-                    if full_name.lower() == data_str.lower():
-                        user = u
-                        break
-            
+                from django.db.models.functions import Concat
+                from django.db.models import Value, CharField
+                user = (
+                    User.objects
+                    .annotate(full_name=Concat('first_name', Value(' '), 'last_name', output_field=CharField()))
+                    .filter(full_name__iexact=data_str)
+                    .first()
+                )
+
             # Try first_name match
             if not user:
                 user = User.objects.filter(first_name__iexact=data_str).first()
-                
+
             # Fallback to creation only if not found by any matching
             if not user:
                 safe_username = data_str.replace(' ', '_').lower()[:150]
