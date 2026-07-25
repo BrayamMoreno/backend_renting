@@ -168,14 +168,20 @@ class Command(BaseCommand):
                     {
                         'nombre': 'Soluciones',
                         'hijos': [
-                            'Piso 1', 'Piso 2', 'Piso 3', 'Piso 4', 'Piso 5',
                             'CallCenterRTM', 'CCT', 'Iva2piso', 'RecursosHumanos', 'Selectiva', 'Tecnologia', 'Togo1Piso'
                         ]
                     },
-                    'Rtm 134', 'Colpatria 134', 'Smart', 'Fontibon', 'Calle 13', 'Primera de Mayo', 'Calle 63', 'Morato',
-                    'Autoexpo', 'Automas_Calle 63', 'Bima', 'Calle 134', 'Calle 134 >', 'Calle 134 > > Bogota_RTM_134', 
-                    'Calle 134 > > Bogota_RTM_134 > Bogota_Colpatria_134', 'Express', 'Madiautoas', 'Morato-Cda', 
-                    'Motomas 134', 'Motomas 1ra de mayo'
+                    {
+                        'nombre': '134',
+                        'hijos': [
+                            'RTM',
+                            'Motomas'
+                            'Colpatria',
+                            'Smart'
+                        ]
+                    },
+                    'Fontibon', 'Calle 13', 'Primera de Mayo', 'Calle 63', 'Morato',
+                    'Autoexpo', 'Automas_Calle 63', 'Bima', 'Express', 'Madiautoas', 'Morato-Cda'
                 ]
             },
             {
@@ -228,7 +234,13 @@ class Command(BaseCommand):
             },
             {
                 'nombre': 'Medellin',
-                'hijos': ['Barbosa', 'Calle 10', 'CarmenVivoral', 'Laureles', 'Laureles > Movicentro_Medellin', 'Llano Grande_Rio']
+                'hijos': [
+                    {
+                        'nombre': 'Laureles',
+                        'hijos': ['Movicentro_Medellin']
+                    },
+                    'Barbosa', 'Calle 10', 'CarmenVivoral', 'Llano Grande_Rio'
+                ]
             },
             {
                 'nombre': 'Mercallant',
@@ -236,7 +248,7 @@ class Command(BaseCommand):
             },
             {
                 'nombre': 'Motomas',
-                'hijos': ['Fusagasuga', 'Fusagasuga > CDA_Fusa', 'Fusagasuga > CDA_Fusa > Motos_Fusa']
+                'hijos': ['Fusagasuga', 'CDA_Fusa', 'Motos_Fusa']
             },
             {
                 'nombre': 'Moviles',
@@ -249,10 +261,6 @@ class Command(BaseCommand):
             {
                 'nombre': 'Pereira',
                 'hijos': ['Peritar']
-            },
-            {
-                'nombre': 'prueba',
-                'hijos': []
             },
             {
                 'nombre': 'Santander',
