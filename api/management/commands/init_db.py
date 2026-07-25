@@ -175,7 +175,7 @@ class Command(BaseCommand):
                         'nombre': '134',
                         'hijos': [
                             'RTM',
-                            'Motomas'
+                            'Motomas',
                             'Colpatria',
                             'Smart'
                         ]
