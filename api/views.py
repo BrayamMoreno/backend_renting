@@ -256,26 +256,32 @@ class InventarioItemViewSet(viewsets.ModelViewSet):
                     replaced.fecha_inicio_reemplazo = timezone.now()
                     replaced.equipo_reemplazante_serial = instance.serial
                     replaced.save(update_fields=['estado', 'fecha_inicio_reemplazo', 'equipo_reemplazante_serial'])
-                    # Reassociate any peripherals still linked to the old equipment (not returned)
-                    if instance.item:
+                    # Reassociate any active peripherals linked to the old equipment (not returned, not in dev, not dado_de_baja)
+                    target_assoc_val = instance.item if instance.item is not None else instance.id
+                    if target_assoc_val:
                         from django.db.models import Q
                         q_filter = Q(equipo_asociado=replaced.id)
                         if replaced.item is not None:
                             q_filter |= Q(equipo_asociado=replaced.item)
+                            q_filter |= Q(cambio_por=str(replaced.item))
+                        if replaced.serial:
+                            q_filter |= Q(cambio_por=replaced.serial)
+
                         peripherals_qs = InventarioItem.objects.filter(
                             Q(tipo_producto__es_periferico=True) & q_filter
                         ).exclude(estado__nombre__in=['DEVUELTO', 'EN_ESPERA_DEVOLUCION', 'PENDIENTE_DEVOLUCION', 'DADO_DE_BAJA'])
+
                         for peripheral in peripherals_qs:
                             old_eq = peripheral.equipo_asociado
-                            peripheral.equipo_asociado = instance.item
+                            peripheral.equipo_asociado = target_assoc_val
                             peripheral.save(update_fields=['equipo_asociado'])
                             registrar_historial(
                                 item=peripheral,
                                 evento='ASOCIACION_PERIFERICO',
                                 estado_anterior=str(old_eq),
-                                estado_nuevo=str(instance.item),
+                                estado_nuevo=str(target_assoc_val),
                                 usuario=self.request.user if self.request.user and not self.request.user.is_anonymous else None,
-                                detalles=f'Reasignado periférico {peripheral.serial} del equipo {old_eq} al nuevo equipo {instance.item}.'
+                                detalles=f'Reasociado periférico {peripheral.serial} al nuevo equipo reemplazante #{target_assoc_val} (reemplazo de equipo #{replaced.item or replaced.serial}).'
                             )
                     
                     registrar_historial(
@@ -612,7 +618,7 @@ class AlistamientoViewSet(viewsets.ModelViewSet):
 
                     peripherals_qs = InventarioItem.objects.filter(
                         Q(tipo_producto__es_periferico=True) & q_filter
-                    ).exclude(estado__nombre__in=['DEVUELTO', 'DADO_DE_BAJA'])
+                    ).exclude(estado__nombre__in=['DEVUELTO', 'EN_ESPERA_DEVOLUCION', 'PENDIENTE_DEVOLUCION', 'DADO_DE_BAJA'])
 
                     for peripheral in peripherals_qs:
                         old_eq = peripheral.equipo_asociado
