@@ -273,6 +273,11 @@ class InventarioItemSerializer(serializers.ModelSerializer):
                     raise serializers.ValidationError({
                         'equipo_asociado': f'No se puede asociar el periférico a un equipo en estado {target_eq.estado.nombre}.'
                     })
+                attrs['equipo_asociado'] = target_eq.item if target_eq.item is not None else target_eq.id
+            else:
+                raise serializers.ValidationError({
+                    'equipo_asociado': f'El equipo seleccionado para la asociación (#{equipo_asociado}) no existe en el inventario.'
+                })
 
         return attrs
 
