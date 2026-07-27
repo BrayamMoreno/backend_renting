@@ -273,13 +273,56 @@ class GmailAuthTestCase(TestCase):
         periph_pending.refresh_from_db()
         periph_active.refresh_from_db()
 
-        # Check pending peripheral: equipo_asociado should remain 100, responsable_devolucion should be tecnico_new
+        # Check pending peripheral: equipo_asociado should remain 100, responsable_devolucion should remain tecnico_old
         self.assertEqual(periph_pending.equipo_asociado, 100)
-        self.assertEqual(periph_pending.responsable_devolucion, tecnico_new)
+        self.assertEqual(periph_pending.responsable_devolucion, tecnico_old)
 
         # Check active peripheral: equipo_asociado should be updated to 200, responsable_devolucion should be tecnico_new
         self.assertEqual(periph_active.equipo_asociado, 200)
         self.assertEqual(periph_active.responsable_devolucion, tecnico_new)
+
+    def test_update_peripheral_whose_equipment_is_pending_devolucion(self):
+        from .models import TipoProducto, Marca, EquipoEstado, InventarioItem, Devolucion
+        from rest_framework.test import APIRequestFactory, force_authenticate
+        from .views import InventarioItemViewSet
+
+        pc_type, _ = TipoProducto.objects.get_or_create(nombre="PORTATIL", defaults={"es_periferico": False})
+        periph_type, _ = TipoProducto.objects.get_or_create(nombre="MOUSE", defaults={"es_periferico": True})
+        marca, _ = Marca.objects.get_or_create(nombre="DELL")
+        est_pending, _ = EquipoEstado.objects.get_or_create(nombre="PENDIENTE_DEVOLUCION")
+
+        dev = Devolucion.objects.create(estado="PENDIENTE")
+
+        laptop = InventarioItem.objects.create(
+            item=500,
+            serial="LAPTOP-500",
+            tipo_producto=pc_type,
+            marca=marca,
+            modelo="Latitude 500",
+            estado=est_pending
+        )
+
+        peripheral = InventarioItem.objects.create(
+            item=501,
+            serial="MOUSE-501",
+            tipo_producto=periph_type,
+            marca=marca,
+            modelo="Mouse 501",
+            equipo_asociado=500,
+            estado=est_pending
+        )
+
+        user = User.objects.create_user(username="test_dev_user", password="pass")
+        factory = APIRequestFactory()
+        request = factory.patch(f'/api/inventario/{peripheral.id}/', {
+            'estado': 'PENDIENTE_DEVOLUCION',
+            'comentario_devolucion': 'Devolucion de mouse',
+            'devolucion': dev.id
+        }, format='json')
+        force_authenticate(request, user=user)
+        view = InventarioItemViewSet.as_view({'patch': 'partial_update'})
+        response = view(request, pk=peripheral.id)
+        self.assertEqual(response.status_code, 200)
 
 
 class BackupTestCase(TestCase):
