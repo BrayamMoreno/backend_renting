@@ -190,6 +190,97 @@ class GmailAuthTestCase(TestCase):
         })
         self.assertTrue(serializer4.is_valid())
 
+    def test_peripheral_pending_return_not_reassigned_on_alistamiento(self):
+        from .models import TipoProducto, InventarioItem, Marca, EquipoEstado
+        from django.contrib.auth.models import User
+        from rest_framework.test import APIRequestFactory
+        from .views import AlistamientoViewSet
+
+        pc_type, _ = TipoProducto.objects.get_or_create(nombre="LAPTOP", defaults={"es_periferico": False})
+        periph_type, _ = TipoProducto.objects.get_or_create(nombre="MOUSE", defaults={"es_periferico": True})
+        marca, _ = Marca.objects.get_or_create(nombre="DELL")
+        
+        est_entregado, _ = EquipoEstado.objects.get_or_create(nombre="ENTREGADO")
+        est_espera, _ = EquipoEstado.objects.get_or_create(nombre="EN_ESPERA_DEVOLUCION")
+        est_recibido, _ = EquipoEstado.objects.get_or_create(nombre="RECIBIDO")
+
+        tecnico_old = User.objects.create_user(username="tecnico_old", password="pass")
+        tecnico_new = User.objects.create_user(username="tecnico_new", password="pass")
+
+        # Create old laptop (Item #100)
+        old_laptop = InventarioItem.objects.create(
+            item=100,
+            serial="LAPTOP-OLD-100",
+            tipo_producto=pc_type,
+            marca=marca,
+            modelo="Latitude",
+            estado=est_entregado
+        )
+
+        # Create peripheral in EN_ESPERA_DEVOLUCION associated to old_laptop
+        periph_pending = InventarioItem.objects.create(
+            item=101,
+            serial="MOUSE-PENDING-101",
+            tipo_producto=periph_type,
+            marca=marca,
+            modelo="Wireless",
+            equipo_asociado=100,
+            estado=est_espera,
+            responsable_devolucion=tecnico_old
+        )
+
+        # Create peripheral ACTIVE (ENTREGADO) associated to old_laptop
+        periph_active = InventarioItem.objects.create(
+            item=102,
+            serial="MOUSE-ACTIVE-102",
+            tipo_producto=periph_type,
+            marca=marca,
+            modelo="USB",
+            equipo_asociado=100,
+            estado=est_entregado,
+            responsable_devolucion=None
+        )
+
+        # Create new replacement laptop (Item #200)
+        new_laptop = InventarioItem.objects.create(
+            item=200,
+            serial="LAPTOP-NEW-200",
+            tipo_producto=pc_type,
+            marca=marca,
+            modelo="Latitude New",
+            estado=est_recibido,
+            es_cambio=True,
+            cambio_por="100"
+        )
+
+        # Perform Alistamiento on new_laptop with tecnico_new
+        alistamiento_data = {
+            "inventario_item": new_laptop.id,
+            "tecnico": tecnico_new.id,
+            "foto_tecnico": "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==",
+            "respuestas": {}
+        }
+        
+        from rest_framework.test import APIRequestFactory, force_authenticate
+        factory = APIRequestFactory()
+        request = factory.post('/api/alistamientos/', alistamiento_data, format='json')
+        force_authenticate(request, user=tecnico_new)
+        view = AlistamientoViewSet.as_view({'post': 'create'})
+        response = view(request)
+        self.assertEqual(response.status_code, 201)
+
+        # Refresh from DB
+        periph_pending.refresh_from_db()
+        periph_active.refresh_from_db()
+
+        # Check pending peripheral: equipo_asociado should remain 100, responsable_devolucion should be tecnico_new
+        self.assertEqual(periph_pending.equipo_asociado, 100)
+        self.assertEqual(periph_pending.responsable_devolucion, tecnico_new)
+
+        # Check active peripheral: equipo_asociado should be updated to 200, responsable_devolucion should be tecnico_new
+        self.assertEqual(periph_active.equipo_asociado, 200)
+        self.assertEqual(periph_active.responsable_devolucion, tecnico_new)
+
 
 class BackupTestCase(TestCase):
     def test_conditional_backup_service(self):

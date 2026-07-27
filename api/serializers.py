@@ -249,6 +249,24 @@ class InventarioItemSerializer(serializers.ModelSerializer):
                         'cambio_por': "Un periférico no puede reemplazar a un equipo principal."
                     })
 
+        # Validar equipo_asociado si el ítem es un periférico
+        equipo_asociado = attrs.get('equipo_asociado')
+        if self.instance and 'equipo_asociado' not in attrs:
+            equipo_asociado = self.instance.equipo_asociado
+
+        if equipo_asociado and tipo_producto_obj and tipo_producto_obj.es_periferico:
+            from django.db.models import Q
+            target_eq = InventarioItem.objects.filter(Q(id=equipo_asociado) | Q(item=equipo_asociado)).first()
+            if target_eq:
+                if target_eq.tipo_producto and target_eq.tipo_producto.es_periferico:
+                    raise serializers.ValidationError({
+                        'equipo_asociado': 'Un periférico solo puede asociarse a un equipo de cómputo, no a otro periférico.'
+                    })
+                if target_eq.estado and target_eq.estado.nombre in ['DADO_DE_BAJA', 'DEVUELTO', 'PENDIENTE_DEVOLUCION', 'EN_ESPERA_DEVOLUCION']:
+                    raise serializers.ValidationError({
+                        'equipo_asociado': f'No se puede asociar el periférico a un equipo en estado {target_eq.estado.nombre}.'
+                    })
+
         return attrs
 
 class ProveedorSerializer(serializers.ModelSerializer):

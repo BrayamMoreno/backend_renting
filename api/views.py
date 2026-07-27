@@ -264,7 +264,7 @@ class InventarioItemViewSet(viewsets.ModelViewSet):
                             q_filter |= Q(equipo_asociado=replaced.item)
                         peripherals_qs = InventarioItem.objects.filter(
                             Q(tipo_producto__es_periferico=True) & q_filter
-                        ).exclude(estado__nombre='DEVUELTO')
+                        ).exclude(estado__nombre__in=['DEVUELTO', 'EN_ESPERA_DEVOLUCION', 'PENDIENTE_DEVOLUCION'])
                         for peripheral in peripherals_qs:
                             old_eq = peripheral.equipo_asociado
                             peripheral.equipo_asociado = instance.item
@@ -575,26 +575,49 @@ class AlistamientoViewSet(viewsets.ModelViewSet):
                     replaced.equipo_reemplazante_serial = item.serial
                     replaced.responsable_devolucion = tecnico_user
                     replaced.save(update_fields=['estado', 'fecha_inicio_reemplazo', 'equipo_reemplazante_serial', 'responsable_devolucion'])
-                    # Reassociate peripherals still linked to the old equipment (not returned)
-                    if item.item:
-                        from django.db.models import Q
-                        q_filter = Q(equipo_asociado=replaced.id)
-                        if replaced.item is not None:
-                            q_filter |= Q(equipo_asociado=replaced.item)
-                        peripherals_qs = InventarioItem.objects.filter(
-                            Q(tipo_producto__es_periferico=True) & q_filter
-                        ).exclude(estado__nombre='DEVUELTO')
-                        for peripheral in peripherals_qs:
-                            old_eq = peripheral.equipo_asociado
+                    # Reassociate peripherals still linked to the old equipment (not returned) and update responsable_devolucion
+                    from django.db.models import Q
+                    q_filter = Q(equipo_asociado=replaced.id)
+                    if replaced.item is not None:
+                        q_filter |= Q(equipo_asociado=replaced.item)
+                        q_filter |= Q(cambio_por=str(replaced.item))
+                    if replaced.serial:
+                        q_filter |= Q(cambio_por=replaced.serial)
+
+                    peripherals_qs = InventarioItem.objects.filter(
+                        Q(tipo_producto__es_periferico=True) & q_filter
+                    ).exclude(estado__nombre='DEVUELTO')
+
+                    for peripheral in peripherals_qs:
+                        old_eq = peripheral.equipo_asociado
+                        fields_to_update = []
+                        is_pending_devolucion = (
+                            peripheral.estado and peripheral.estado.nombre in ['EN_ESPERA_DEVOLUCION', 'PENDIENTE_DEVOLUCION']
+                        )
+                        # Solo reasignar equipo_asociado si el periférico NO está pendiente de devolución
+                        if not is_pending_devolucion and item.item and peripheral.equipo_asociado != item.item:
                             peripheral.equipo_asociado = item.item
-                            peripheral.save(update_fields=['equipo_asociado'])
+                            fields_to_update.append('equipo_asociado')
+                        if peripheral.responsable_devolucion != tecnico_user:
+                            peripheral.responsable_devolucion = tecnico_user
+                            fields_to_update.append('responsable_devolucion')
+                        
+                        if fields_to_update:
+                            peripheral.save(update_fields=fields_to_update)
+                            evento = 'ASOCIACION_PERIFERICO' if 'equipo_asociado' in fields_to_update else 'CAMBIO_RESPONSABLE_DEVOLUCION'
+                            detalles_msg = f'Reasignado periférico {peripheral.serial} al responsable {tecnico_user.get_full_name() or tecnico_user.username}'
+                            if 'equipo_asociado' in fields_to_update:
+                                detalles_msg += f' y nuevo equipo {item.item}.'
+                            else:
+                                detalles_msg += ' (conserva equipo asociado original por estar en devolución).'
+                            
                             registrar_historial(
                                 item=peripheral,
-                                evento='ASOCIACION_PERIFERICO',
-                                estado_anterior=str(old_eq),
-                                estado_nuevo=str(item.item),
+                                evento=evento,
+                                estado_anterior=str(old_eq) if 'equipo_asociado' in fields_to_update else None,
+                                estado_nuevo=str(item.item) if 'equipo_asociado' in fields_to_update else (peripheral.estado.nombre if peripheral.estado else 'EN_ESPERA_DEVOLUCION'),
                                 usuario=self.request.user if self.request.user and not self.request.user.is_anonymous else None,
-                                detalles=f'Reasignado periférico {peripheral.serial} del equipo {old_eq} al nuevo equipo {item.item}.'
+                                detalles=detalles_msg
                             )
                     
                     registrar_historial(
