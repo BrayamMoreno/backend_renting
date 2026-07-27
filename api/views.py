@@ -337,6 +337,32 @@ class InventarioItemViewSet(viewsets.ModelViewSet):
                 detalles=detalles
             )
 
+        # Sincronizar responsable_devolucion y estado EN_ESPERA_DEVOLUCION en periféricos asociados si es un equipo principal
+        if instance.tipo_producto and not instance.tipo_producto.es_periferico:
+            if instance.responsable_devolucion or (instance.estado and instance.estado.nombre == 'EN_ESPERA_DEVOLUCION'):
+                from django.db.models import Q
+                q_periph = Q(equipo_asociado=instance.id)
+                if instance.item is not None:
+                    q_periph |= Q(equipo_asociado=instance.item)
+                
+                periphs = InventarioItem.objects.filter(
+                    Q(tipo_producto__es_periferico=True) & q_periph
+                ).exclude(estado__nombre='DEVUELTO')
+
+                for p in periphs:
+                    p_fields = []
+                    if instance.responsable_devolucion and p.responsable_devolucion != instance.responsable_devolucion:
+                        p.responsable_devolucion = instance.responsable_devolucion
+                        p_fields.append('responsable_devolucion')
+                    
+                    if instance.estado and instance.estado.nombre == 'EN_ESPERA_DEVOLUCION':
+                        if p.estado and p.estado.nombre not in ['EN_ESPERA_DEVOLUCION', 'PENDIENTE_DEVOLUCION', 'DEVUELTO', 'DADO_DE_BAJA']:
+                            p.estado = instance.estado
+                            p_fields.append('estado')
+
+                    if p_fields:
+                        p.save(update_fields=p_fields)
+
         # Enviar correo de baja si aplica (equipos rentados que pasan a DADO_DE_BAJA)
         if new_estado == 'DADO_DE_BAJA' and old_estado != 'DADO_DE_BAJA' and not instance.es_propio:
             import threading

@@ -193,6 +193,9 @@ class InventarioItem(models.Model):
             except InventarioItem.DoesNotExist:
                 pass
 
+        if self.tipo_producto and not self.tipo_producto.es_periferico:
+            self.equipo_asociado = None
+
         if self.estado and self.estado.nombre in ['RECIBIDO', 'ALMACENADO', 'EN_ESPERA_DEVOLUCION', 'DEVUELTO', 'PENDIENTE_DEVOLUCION', 'DADO_DE_BAJA']:
             self.tecnico_asignado = None
             self.fecha_asignacion_alistamiento = None

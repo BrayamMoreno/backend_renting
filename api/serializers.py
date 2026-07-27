@@ -254,7 +254,9 @@ class InventarioItemSerializer(serializers.ModelSerializer):
         if self.instance and 'equipo_asociado' not in attrs:
             equipo_asociado = self.instance.equipo_asociado
 
-        if equipo_asociado and tipo_producto_obj and tipo_producto_obj.es_periferico:
+        if tipo_producto_obj and not tipo_producto_obj.es_periferico:
+            attrs['equipo_asociado'] = None
+        elif equipo_asociado and tipo_producto_obj and tipo_producto_obj.es_periferico:
             from django.db.models import Q
             target_eq = InventarioItem.objects.filter(Q(id=equipo_asociado) | Q(item=equipo_asociado)).first()
             if target_eq:
