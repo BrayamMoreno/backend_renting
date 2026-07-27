@@ -264,7 +264,7 @@ class InventarioItemViewSet(viewsets.ModelViewSet):
                             q_filter |= Q(equipo_asociado=replaced.item)
                         peripherals_qs = InventarioItem.objects.filter(
                             Q(tipo_producto__es_periferico=True) & q_filter
-                        ).exclude(estado__nombre__in=['DEVUELTO', 'EN_ESPERA_DEVOLUCION', 'PENDIENTE_DEVOLUCION'])
+                        ).exclude(estado__nombre__in=['DEVUELTO', 'EN_ESPERA_DEVOLUCION', 'PENDIENTE_DEVOLUCION', 'DADO_DE_BAJA'])
                         for peripheral in peripherals_qs:
                             old_eq = peripheral.equipo_asociado
                             peripheral.equipo_asociado = instance.item
@@ -347,11 +347,11 @@ class InventarioItemViewSet(viewsets.ModelViewSet):
                 
                 periphs = InventarioItem.objects.filter(
                     Q(tipo_producto__es_periferico=True) & q_periph
-                ).exclude(estado__nombre='DEVUELTO')
+                ).exclude(estado__nombre__in=['DEVUELTO', 'DADO_DE_BAJA'])
 
                 for p in periphs:
                     p_fields = []
-                    if instance.responsable_devolucion and p.responsable_devolucion != instance.responsable_devolucion:
+                    if instance.responsable_devolucion and p.responsable_devolucion != instance.responsable_devolucion and p.estado and p.estado.nombre not in ['DEVUELTO', 'DADO_DE_BAJA']:
                         p.responsable_devolucion = instance.responsable_devolucion
                         p_fields.append('responsable_devolucion')
                     
@@ -612,19 +612,19 @@ class AlistamientoViewSet(viewsets.ModelViewSet):
 
                     peripherals_qs = InventarioItem.objects.filter(
                         Q(tipo_producto__es_periferico=True) & q_filter
-                    ).exclude(estado__nombre='DEVUELTO')
+                    ).exclude(estado__nombre__in=['DEVUELTO', 'DADO_DE_BAJA'])
 
                     for peripheral in peripherals_qs:
                         old_eq = peripheral.equipo_asociado
                         fields_to_update = []
-                        is_pending_devolucion = (
-                            peripheral.estado and peripheral.estado.nombre in ['EN_ESPERA_DEVOLUCION', 'PENDIENTE_DEVOLUCION']
+                        is_pending_or_inactive = (
+                            peripheral.estado and peripheral.estado.nombre in ['EN_ESPERA_DEVOLUCION', 'PENDIENTE_DEVOLUCION', 'DEVUELTO', 'DADO_DE_BAJA']
                         )
-                        # Solo reasignar equipo_asociado si el periférico NO está pendiente de devolución
-                        if not is_pending_devolucion and item.item and peripheral.equipo_asociado != item.item:
+                        # Solo reasignar equipo_asociado si el periférico NO está en devolución, devuelto ni dado de baja
+                        if not is_pending_or_inactive and item.item and peripheral.equipo_asociado != item.item:
                             peripheral.equipo_asociado = item.item
                             fields_to_update.append('equipo_asociado')
-                        if peripheral.responsable_devolucion != tecnico_user:
+                        if not is_pending_or_inactive and peripheral.responsable_devolucion != tecnico_user:
                             peripheral.responsable_devolucion = tecnico_user
                             fields_to_update.append('responsable_devolucion')
                         

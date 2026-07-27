@@ -65,7 +65,7 @@ class Command(BaseCommand):
 
             periphs = InventarioItem.objects.filter(
                 Q(tipo_producto__es_periferico=True) & q_filter
-            ).exclude(estado__nombre='DEVUELTO')
+            ).exclude(estado__nombre__in=['DEVUELTO', 'DADO_DE_BAJA'])
 
             for periph in periphs:
                 if periph.responsable_devolucion != main_eq.responsable_devolucion:
