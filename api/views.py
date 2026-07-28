@@ -1,3 +1,4 @@
+import logging
 from django.utils import timezone
 from django.contrib.auth.models import User
 from django.db.models import Prefetch
@@ -5,6 +6,8 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+
+logger = logging.getLogger(__name__)
 
 from .models import (
     Recepcion, InventarioItem, Marca, TipoProducto, TipoDisco, Procesador, Ram, Disco, Ubicacion,
@@ -30,7 +33,7 @@ def _inventario_qs_optimized():
 
 
 class PuntoAlistamientoViewSet(viewsets.ModelViewSet):
-    queryset = PuntoAlistamiento.objects.all()
+    queryset = PuntoAlistamiento.objects.all().order_by('orden', 'id')
     serializer_class = PuntoAlistamientoSerializer
 
 
@@ -292,8 +295,13 @@ class InventarioItemViewSet(viewsets.ModelViewSet):
                         usuario=self.request.user if self.request.user and not self.request.user.is_anonymous else None,
                         detalles=f"Puesto en espera de devolución al registrar equipo de reemplazo con serial {instance.serial}."
                     )
-            except Exception:
-                pass
+            except Exception as e:
+                # BUG-4 FIX: no silenciar errores — loguear para detectar inconsistencias de datos
+                logger.error(
+                    f'[perform_create] Error al reasociar periféricos o marcar equipo en espera '
+                    f'para item {instance.serial}: {type(e).__name__}: {e}',
+                    exc_info=True
+                )
 
     def perform_update(self, serializer):
         """
@@ -545,8 +553,9 @@ class DevolucionViewSet(viewsets.ModelViewSet):
             except EquipoEstado.DoesNotExist:
                 pass
             if not instance.confirmado_por:
+                # BUG-5 FIX: usar update_fields para hacer el save más preciso
                 instance.confirmado_por = self.request.user
-                instance.save()
+                instance.save(update_fields=['confirmado_por'])
 
 
 class RolViewSet(viewsets.ModelViewSet):
@@ -684,8 +693,13 @@ class AlistamientoViewSet(viewsets.ModelViewSet):
                         usuario=self.request.user if self.request.user and not self.request.user.is_anonymous else None,
                         detalles=f"Equipo fantasma creado automáticamente por alistamiento de equipo reemplazante {item.serial}."
                     )
-            except Exception:
-                pass
+            except Exception as e:
+                # BUG-4 FIX: no silenciar errores — loguear para detectar inconsistencias de datos
+                logger.error(
+                    f'[AlistamientoViewSet.perform_create] Error al reasociar periféricos '
+                    f'para alistamiento del item {item.serial if item else "?"}:  {type(e).__name__}: {e}',
+                    exc_info=True
+                )
 
 
 class AlertaCriticaViewSet(viewsets.ModelViewSet):
@@ -806,7 +820,14 @@ class BackupViewSet(viewsets.ViewSet):
         if not filepath:
             return Response({'detail': 'Archivo de respaldo no encontrado.'}, status=status.HTTP_404_NOT_FOUND)
         
-        file_handle = open(filepath, 'rb')
+        # BUG-8 FIX: envolver el open() en try/except para evitar file handle leak
+        try:
+            file_handle = open(filepath, 'rb')
+        except OSError as e:
+            return Response(
+                {'detail': f'No se pudo leer el archivo de respaldo: {e}'},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR
+            )
         return FileResponse(file_handle, as_attachment=True, filename=filename, content_type='application/gzip')
 
     @action(detail=False, methods=['delete'], url_path='eliminar')

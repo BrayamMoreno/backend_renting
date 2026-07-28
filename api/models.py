@@ -259,7 +259,13 @@ class PuntoAlistamiento(models.Model):
     orden = models.PositiveIntegerField(default=0)
 
     class Meta:
-        ordering = ['orden', 'nombre']
+        ordering = ['orden', 'id']
+
+    def save(self, *args, **kwargs):
+        if not self.orden:
+            max_orden = PuntoAlistamiento.objects.aggregate(models.Max('orden'))['orden__max'] or 0
+            self.orden = max_orden + 1
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return self.nombre
@@ -400,6 +406,16 @@ class ConfiguracionEmailBaja(models.Model):
     class Meta:
         verbose_name = "Configuración Email de Baja"
         verbose_name_plural = "Configuraciones Email de Baja"
+
+    def save(self, *args, **kwargs):
+        if self.asunto:
+            self.asunto = self.asunto.strip()
+        if self.cuerpo:
+            lines = [line.strip() for line in self.cuerpo.splitlines()]
+            self.cuerpo = "\n".join(lines).strip()
+        if self.destinatario:
+            self.destinatario = self.destinatario.strip()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         if self.pk:
